@@ -1,0 +1,47 @@
+2021-04-19 14:44:04,569 - confsolve - INFO - Started optimizing the conformers for C([C@@H](C(=O)O)N)S
+2021-04-19 14:44:04,585 - confsolve - INFO - Determined initial structure with 14 atoms
+2021-04-19 14:44:04,585 - confsolve - INFO - Detected 1 dihedral angles
+2021-04-19 14:44:19,903 - confopt.solver - INFO - Computed initial energy: -19641.708385193648
+2021-04-19 14:44:27,714 - confsolve - INFO - Started optimizing the conformers for C([C@@H](C(=O)O)N)S
+2021-04-19 14:44:27,730 - confsolve - INFO - Determined initial structure with 14 atoms
+2021-04-19 14:44:27,731 - confsolve - INFO - Detected 5 dihedral angles
+2021-04-19 14:44:40,696 - confopt.solver - INFO - Computed initial energy: -19641.708383368983
+2021-04-19 14:44:44,981 - confopt.solver - INFO - Evaluated initial guess 1/4. Energy-E0: 0.22782835785619682
+2021-04-19 14:44:49,557 - confopt.solver - INFO - Evaluated initial guess 2/4. Energy-E0: 0.12279918543572421
+2021-04-19 14:44:52,818 - confopt.solver - INFO - Evaluated initial guess 3/4. Energy-E0: 0.12535594745713752
+2021-04-19 14:44:57,108 - confopt.solver - INFO - Evaluated initial guess 4/4. Energy-E0: 0.2949839596512902
+2021-04-19 14:45:01,854 - confopt.solver - INFO - Evaluated energy in step 1/32: Energy-E0: 0.4920573756971862
+2021-04-19 14:45:07,027 - confopt.solver - INFO - Evaluated energy in step 2/32: Energy-E0: 0.38771549399461946
+2021-04-19 14:45:11,757 - confopt.solver - INFO - Evaluated energy in step 3/32: Energy-E0: 0.4651017931937531
+2021-04-19 14:45:17,927 - confopt.solver - INFO - Evaluated energy in step 4/32: Energy-E0: 0.593907777860295
+2021-04-19 14:45:22,806 - confopt.solver - INFO - Evaluated energy in step 5/32: Energy-E0: 0.6043464871472679
+2021-04-19 14:45:28,011 - confopt.solver - INFO - Evaluated energy in step 6/32: Energy-E0: 0.24907922465718002
+2021-04-19 14:45:32,674 - confopt.solver - INFO - Evaluated energy in step 7/32: Energy-E0: 0.14856670787776238
+2021-04-19 14:45:39,102 - confopt.solver - INFO - Evaluated energy in step 8/32: Energy-E0: 0.25110825283263694
+2021-04-19 14:45:44,661 - confopt.solver - INFO - Evaluated energy in step 9/32: Energy-E0: 0.2509338958952867
+2021-04-19 14:45:50,940 - confopt.solver - INFO - Evaluated energy in step 10/32: Energy-E0: 0.3347663332569937
+2021-04-19 14:45:56,399 - confopt.solver - INFO - Evaluated energy in step 11/32: Energy-E0: 0.2669753423433576
+2021-04-19 14:46:02,529 - confopt.solver - INFO - Evaluated energy in step 12/32: Energy-E0: 0.3084266767727968
+2021-04-19 14:46:08,207 - confopt.solver - INFO - Evaluated energy in step 13/32: Energy-E0: 0.11673987638641847
+2021-04-19 14:46:14,368 - confopt.solver - INFO - Evaluated energy in step 14/32: Energy-E0: 0.10368074452708242
+2021-04-19 14:46:20,126 - confopt.solver - INFO - Evaluated energy in step 15/32: Energy-E0: -0.0286575900427124
+2021-04-19 14:46:26,191 - confopt.solver - INFO - Evaluated energy in step 16/32: Energy-E0: -0.023826483698940137
+2021-04-19 14:46:34,305 - confopt.solver - INFO - Evaluated energy in step 17/32: Energy-E0: 0.5810769319432438
+2021-04-19 14:46:41,877 - confopt.solver - INFO - Evaluated energy in step 18/32: Energy-E0: -0.11433111501901294
+2021-04-19 14:46:54,062 - confopt.solver - INFO - Evaluated energy in step 19/32: Energy-E0: -0.01963563224489917
+2021-04-19 14:47:02,988 - confopt.solver - INFO - Evaluated energy in step 20/32: Energy-E0: 0.22995267412261455
+2021-04-19 14:47:11,959 - confopt.solver - INFO - Evaluated energy in step 21/32: Energy-E0: 0.10818726313300431
+2021-04-19 14:47:21,833 - confopt.solver - INFO - Evaluated energy in step 22/32: Energy-E0: -0.014201372538082069
+2021-04-19 14:47:30,614 - confopt.solver - INFO - Evaluated energy in step 23/32: Energy-E0: -0.036317739068181254
+2021-04-19 14:47:37,092 - confopt.solver - INFO - Evaluated energy in step 24/32: Energy-E0: 0.04443851479663863
+2021-04-19 14:47:47,531 - confopt.solver - INFO - Evaluated energy in step 25/32: Energy-E0: 0.35909622192775714
+2021-04-19 14:47:58,144 - confopt.solver - INFO - Evaluated energy in step 26/32: Energy-E0: -0.011055851744458778
+2021-04-19 14:48:08,828 - confopt.solver - INFO - Evaluated energy in step 27/32: Energy-E0: -0.07088602928706678
+2021-04-19 14:48:20,509 - confopt.solver - INFO - Evaluated energy in step 28/32: Energy-E0: 0.21545043449441437
+2021-04-19 14:48:29,822 - confopt.solver - INFO - Evaluated energy in step 29/32: Energy-E0: -0.09668193541438086
+2021-04-19 14:48:38,726 - confopt.solver - INFO - Evaluated energy in step 30/32: Energy-E0: -0.04629764632045408
+2021-04-19 14:48:51,565 - confopt.solver - INFO - Evaluated energy in step 31/32: Energy-E0: 0.05583720094000455
+2021-04-19 14:48:59,574 - confopt.solver - INFO - Evaluated energy in step 32/32: Energy-E0: -0.041957983248721575
+2021-04-19 14:49:12,341 - confopt.solver - INFO - Performed final relaxation with dihedral constraints.E: -19641.82271306482. E-E0: -0.11432969583620434
+2021-04-19 14:49:17,590 - confopt.solver - INFO - Performed final relaxation without dihedral constraints. E: -19641.87401171413. E-E0: -0.16562834514843416
+2021-04-19 14:49:17,592 - confsolve - INFO - Done.

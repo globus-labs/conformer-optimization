@@ -16,6 +16,7 @@ dependencies:
   - scipy==1.5.2
   - networkx
   - torchani
+  - xtb-python
   - modal==0.4.*
   - psi4
   - tqdm
