@@ -22,6 +22,7 @@ if __name__ == "__main__":
     parser.add_argument('--num-steps', type=int, default=32, help='Number of optimization steps to take')
     parser.add_argument('--init-steps', type=int, default=4, help='Number of initial guesses to make')
     parser.add_argument('--level', choices=['xtb', 'ani', 'b3lyp'], default='ani', help='Level of quantum chemistry')
+    parser.add_argument('--relax', action='store_true', help='Relax the non-dihedral degrees of freedom before computing energy')
     args = parser.parse_args()
 
     # Make an output directory
@@ -74,7 +75,8 @@ if __name__ == "__main__":
         calc = Psi4(method='b3lyp', basis='3-21g', num_threads=4, multiplicity=1, charge=1)
     else:
         raise ValueError(f'Unrecognized QC level: {args.level}')
-    final_atoms = run_optimization(init_atoms, dihedrals, args.num_steps, calc, args.init_steps, out_dir)
+    final_atoms = run_optimization(init_atoms, dihedrals, args.num_steps, calc, args.init_steps,
+                                   out_dir, relax=args.relax)
 
     # Save the final structure
     with out_dir.joinpath('final.xyz').open('w') as fp:

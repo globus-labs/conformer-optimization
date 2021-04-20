@@ -12,7 +12,8 @@ from confopt.setup import DihedralInfo
 
 
 def evaluate_energy(angles: Union[List[float], np.ndarray], atoms: Atoms,
-                    dihedrals: List[DihedralInfo], calc: Calculator) -> Tuple[float, Atoms]:
+                    dihedrals: List[DihedralInfo], calc: Calculator,
+                    relax: bool = True) -> Tuple[float, Atoms]:
     """Compute the energy of a cysteine molecule given dihedral angles
 
     Args:
@@ -20,6 +21,7 @@ def evaluate_energy(angles: Union[List[float], np.ndarray], atoms: Atoms,
         atoms: Structure to optimize
         dihedrals: Description of the dihedral angles
         calc: Calculator used to compute energy/gradients
+        relax: Whether to relax the non-dihedral degrees of freedom
     Returns:
         - (float) energy of the structure
         - (Atoms) Relaxed structure
@@ -34,6 +36,11 @@ def evaluate_energy(angles: Union[List[float], np.ndarray], atoms: Atoms,
 
         # Define the constraints
         dih_cnsts.append((a, di.chain))
+        
+    # If not relaxed, just compute the energy
+    if not relax:
+        return calc.get_potential_energy(atoms), atoms
+        
     atoms.set_constraint()
     atoms.set_constraint(FixInternals(dihedrals_deg=dih_cnsts))
 

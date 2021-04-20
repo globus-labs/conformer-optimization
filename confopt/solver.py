@@ -9,6 +9,7 @@ from typing import List, Optional
 
 from modAL.acquisition import max_EI
 from sklearn.gaussian_process import GaussianProcessRegressor, kernels
+from scipy.optimize import minimize
 from modAL.models import BayesianOptimizer
 from ase.calculators.calculator import Calculator
 from ase.io.xyz import simple_write_xyz
@@ -43,7 +44,7 @@ def _elementwise_expsine_kernel(x, y, gamma=10, p=360):
     return np.sum(np.exp(-2 * np.power(sine_dists, 2) / gamma ** 2), axis=-1)
 
 
-def _get_search_space(optimizer: BayesianOptimizer, n_dihedrals: int, n_samples: int = 1024, width: float = 60):
+def _get_search_space(optimizer: BayesianOptimizer, n_dihedrals: int, n_samples: int = 32, width: float = 60):
     """Generate many samples by adding zero-mean Gaussian noise to the current minimum
 
     Args:
@@ -57,14 +58,32 @@ def _get_search_space(optimizer: BayesianOptimizer, n_dihedrals: int, n_samples:
     """
 
     # Generate random starting points
-    init_points = np.random.normal(0, 60, size=(n_samples, n_dihedrals))
+    init_points = np.random.normal(0, width, size=(n_samples, n_dihedrals))
     best_point = np.array(optimizer.X_max)
     init_points += best_point[None, :]
-    return init_points
+    
+    # Use local optimization to find the minima near these
+    #  See: https://docs.scipy.org/doc/scipy/reference/optimize.minimize-powell.html#optimize-minimize-powell
+    final_points = []
+    for init_point in init_points:
+        result = minimize(
+            # Define the function to be optimized
+            lambda x: -optimizer.predict([x]),  # Model predicts the negative energy and requires a 2D array,
+            init_point,  # Initial guess
+            method='nelder-mead',  # A derivative-free optimizer
+        )
+        final_points.append(result.x)
+
+    # Combine the results from the optimizer with the initial points sampled
+    all_points = np.vstack([
+        init_points,
+        final_points
+    ])
+    return all_points
 
 
 def run_optimization(atoms: Atoms, dihedrals: List[DihedralInfo], n_steps: int, calc: Calculator,
-                     init_steps: int, out_dir: Optional[Path]) -> Atoms:
+                     init_steps: int, out_dir: Optional[Path], relax: bool = True) -> Atoms:
     """Optimize the structure of a molecule by iteratively changing the dihedral angles
 
     Args:
@@ -74,6 +93,9 @@ def run_optimization(atoms: Atoms, dihedrals: List[DihedralInfo], n_steps: int, 
         init_steps: Number of initial guesses to evalaute
         calc: Calculator to pick the energy
         out_dir: Output path for logging information
+        relax: Whether to relax non-dihedral degrees of freedom each step
+    Returns:
+        (Atoms) optimized geometry
     """
     # Perform an initial relaxation
     _, init_atoms = relax_structure(atoms, calc)
@@ -83,7 +105,7 @@ def run_optimization(atoms: Atoms, dihedrals: List[DihedralInfo], n_steps: int, 
 
     # Evaluate initial point
     start_coords = np.array([d.get_angle(init_atoms) for d in dihedrals])
-    start_energy, start_atoms = evaluate_energy(start_coords, atoms, dihedrals, calc)
+    start_energy, start_atoms = evaluate_energy(start_coords, atoms, dihedrals, calc, relax)
     logger.info(f'Computed initial energy: {start_energy}')
 
     # Begin a structure log, if output available
@@ -111,7 +133,7 @@ def run_optimization(atoms: Atoms, dihedrals: List[DihedralInfo], n_steps: int, 
     init_guesses = np.random.normal(start_coords, 30, size=(init_steps, len(dihedrals)))
     init_energies = []
     for i, guess in enumerate(init_guesses):
-        energy, cur_atoms = evaluate_energy(guess, start_atoms, dihedrals, calc)
+        energy, cur_atoms = evaluate_energy(guess, start_atoms, dihedrals, calc, relax)
         init_energies.append(energy - start_energy)
         logger.info(f'Evaluated initial guess {i+1}/{init_steps}. Energy-E0: {energy-start_energy}')
 
@@ -121,7 +143,7 @@ def run_optimization(atoms: Atoms, dihedrals: List[DihedralInfo], n_steps: int, 
     # Prepare an a machine learning model
     gpr = GaussianProcessRegressor(
         kernel=kernels.PairwiseKernel(metric=_elementwise_expsine_kernel),
-        n_restarts_optimizer=4
+        n_restarts_optimizer=8
     )
 
     # Build an optimizer
@@ -144,7 +166,7 @@ def run_optimization(atoms: Atoms, dihedrals: List[DihedralInfo], n_steps: int, 
         best_coords = best_coords[0, :]
 
         # Compute the energies of those points
-        energy, cur_atoms = evaluate_energy(best_coords, cur_atoms, dihedrals, calc)
+        energy, cur_atoms = evaluate_energy(best_coords, cur_atoms, dihedrals, calc, relax)
         logger.info(f'Evaluated energy in step {step+1}/{n_steps}. Energy-E0: {energy-start_energy}')
         if energy - start_energy < -optimizer.y_max and out_dir is not None:
             with open(out_dir.joinpath('current_best.xyz'), 'w') as fp:
