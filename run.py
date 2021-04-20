@@ -21,7 +21,7 @@ if __name__ == "__main__":
     parser.add_argument('smiles', type=str, help='SMILES string of molecule to optimize')
     parser.add_argument('--num-steps', type=int, default=32, help='Number of optimization steps to take')
     parser.add_argument('--init-steps', type=int, default=4, help='Number of initial guesses to make')
-    parser.add_argument('--level', choices=['xtb', 'ani', 'b3lyp'], default='ani', help='Level of quantum chemistry')
+    parser.add_argument('--level', choices=['xtb', 'ani', 'b3lyp'], default='xtb', help='Level of quantum chemistry')
     parser.add_argument('--relax', action='store_true', help='Relax the non-dihedral degrees of freedom before computing energy')
     args = parser.parse_args()
 
