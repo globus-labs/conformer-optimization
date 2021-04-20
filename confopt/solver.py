@@ -127,8 +127,8 @@ def run_optimization(atoms: Atoms, dihedrals: List[DihedralInfo], n_steps: int, 
     # Build an optimizer
     optimizer = BayesianOptimizer(
         estimator=gpr,
-        X_training=init_guesses,
-        y_training=np.multiply(-1, init_energies),
+        X_training=np.concatenate([start_coords[None, :], init_guesses], axis=0),
+        y_training=np.multiply(-1, [0] + init_energies),
         query_strategy=max_EI,
     )
 

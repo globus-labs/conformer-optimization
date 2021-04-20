@@ -10,7 +10,7 @@ from ase.calculators.psi4 import Psi4
 from xtb.ase.calculator import XTB
 import torchani
 
-from confopt.setup import get_initial_structure, detect_dihedrals
+from confopt.setup import get_initial_structure, detect_dihedrals, fix_cyclopropenyl
 from confopt.solver import run_optimization
 
 logger = logging.getLogger('confsolve')
@@ -53,6 +53,9 @@ if __name__ == "__main__":
     # Make the initial guess
     init_atoms, mol = get_initial_structure(args.smiles)
     logger.info(f'Determined initial structure with {len(init_atoms)} atoms')
+    
+    # Fix cycloprop. rings
+    init_atoms = fix_cyclopropenyl(init_atoms, mol)
 
     # Detect the dihedral angles
     dihedrals = detect_dihedrals(mol)
