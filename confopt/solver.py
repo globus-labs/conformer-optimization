@@ -7,12 +7,21 @@ from io import StringIO
 from pathlib import Path
 from typing import List, Optional
 
+from botorch.optim import optimize_acqf
 from modAL.acquisition import max_EI
 from sklearn.gaussian_process import GaussianProcessRegressor, kernels
 from scipy.optimize import minimize
 from modAL.models import BayesianOptimizer
 from ase.calculators.calculator import Calculator
 from ase.io.xyz import simple_write_xyz
+import torch
+from botorch.acquisition import ExpectedImprovement
+from botorch.models import SingleTaskGP
+from botorch.fit import fit_gpytorch_model
+from botorch.utils import standardize
+from gpytorch.mlls import ExactMarginalLogLikelihood
+from gpytorch import kernels as gpykernels
+from gpytorch.priors import NormalPrior
 from ase import Atoms
 import numpy as np
 
@@ -91,7 +100,7 @@ def select_next_points_modal(observed_X: List[List[float]], observed_y: List[flo
         observed_X: Observed coordinates
         observed_y: Observed energies
     Returns:
-        Next coordiantes to try
+        Next coordinates to try
     """
 
     # Make the inputs to arrays
@@ -120,6 +129,42 @@ def select_next_points_modal(observed_X: List[List[float]], observed_y: List[flo
         # Pick the best point to add to the dataset
         best_point, best_coords = optimizer.query(sample_points)
         return best_coords[0, :]
+
+
+def select_next_points_botorch(observed_X: List[List[float]], observed_y: List[float]) -> np.ndarray:
+    """Generate the next sample to evaluate with XTB
+
+    Uses BOTorch to pick the next sample using Expected Improvement
+
+    Args:
+        observed_X: Observed coordinates
+        observed_y: Observed energies
+    Returns:
+        Next coordinates to try
+    """
+
+    # Convert inputs to torch arrays
+    train_X = torch.tensor(observed_X, dtype=torch.float)
+    train_y = torch.tensor(observed_y, dtype=torch.float)
+    train_y = train_y[:, None]
+    train_y = standardize(-1 * train_y)
+
+    # Make the GP
+    gp = SingleTaskGP(train_X, train_y, covar_module=gpykernels.ProductStructureKernel(
+        num_dims=train_X.shape[1],
+        base_kernel=gpykernels.PeriodicKernel(period_length_prior=NormalPrior(360, 0.1))
+    ))
+    mll = ExactMarginalLogLikelihood(gp.likelihood, gp)
+    fit_gpytorch_model(mll)
+
+    # Solve the optimization problem
+    ei = ExpectedImprovement(gp, train_y.max())
+    bounds = torch.zeros(2, train_X.shape[1])
+    bounds[1, :] = 360
+    candidate, acq_value = optimize_acqf(
+        ei, bounds=bounds, q=1, num_restarts=64, raw_samples=64
+    )
+    return candidate.detach().numpy()[0, :]
 
 
 def run_optimization(atoms: Atoms, dihedrals: List[DihedralInfo], n_steps: int, calc: Calculator,
@@ -188,7 +233,7 @@ def run_optimization(atoms: Atoms, dihedrals: List[DihedralInfo], n_steps: int, 
     cur_atoms = start_atoms.copy()
     for step in range(n_steps):
         # Make a new search space
-        best_coords = select_next_points_modal(observed_coords, observed_energies)
+        best_coords = select_next_points_botorch(observed_coords, observed_energies)
 
         # Compute the energies of those points
         energy, cur_atoms = evaluate_energy(best_coords, cur_atoms, dihedrals, calc, relax)
