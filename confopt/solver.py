@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 
 
 def _elementwise_expsine_kernel(x, y, gamma=10, p=360):
-    """Compute the expoonential sine kernel
+    """Compute the exponential sine kernel
 
     Args:
         x, y: Coordinates to be compared
@@ -142,6 +142,9 @@ def select_next_points_botorch(observed_X: List[List[float]], observed_y: List[f
     Returns:
         Next coordinates to try
     """
+
+    # Clip the energies if needed
+    observed_y = np.clip(observed_y, -np.inf, 2 + np.log10(np.clip(observed_y, 1, np.inf)))
 
     # Convert inputs to torch arrays
     train_X = torch.tensor(observed_X, dtype=torch.float)
