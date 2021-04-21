@@ -82,6 +82,46 @@ def _get_search_space(optimizer: BayesianOptimizer, n_dihedrals: int, n_samples:
     return all_points
 
 
+def select_next_points_modal(observed_X: List[List[float]], observed_y: List[float]) -> np.ndarray:
+    """Generate the next sample to evaluate with XTB
+
+    Uses modAL to pick the next sample using Expected Improvement
+
+    Args:
+        observed_X: Observed coordinates
+        observed_y: Observed energies
+    Returns:
+        Next coordiantes to try
+    """
+
+    # Make the inputs to arrays
+    observed_X = np.array(observed_X)
+    observed_y = np.array(observed_y)
+
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore')
+        # Prepare an a machine learning model
+        gpr = GaussianProcessRegressor(
+            kernel=kernels.PairwiseKernel(metric=_elementwise_expsine_kernel),
+            n_restarts_optimizer=8
+        )
+
+        # Build an optimizer
+        optimizer = BayesianOptimizer(
+            estimator=gpr,
+            X_training=observed_X,
+            y_training=np.multiply(-1, observed_y),
+            query_strategy=max_EI,
+        )
+
+        sample_points = _get_search_space(optimizer, observed_X.shape[1])
+        logger.debug(f'Generated {len(sample_points)} new points to evaluate')
+
+        # Pick the best point to add to the dataset
+        best_point, best_coords = optimizer.query(sample_points)
+        return best_coords[0, :]
+
+
 def run_optimization(atoms: Atoms, dihedrals: List[DihedralInfo], n_steps: int, calc: Calculator,
                      init_steps: int, out_dir: Optional[Path], relax: bool = True) -> Atoms:
     """Optimize the structure of a molecule by iteratively changing the dihedral angles
@@ -140,35 +180,20 @@ def run_optimization(atoms: Atoms, dihedrals: List[DihedralInfo], n_steps: int, 
         if out_dir is not None:
             add_entry(guess, cur_atoms, energy)
 
-    # Prepare an a machine learning model
-    gpr = GaussianProcessRegressor(
-        kernel=kernels.PairwiseKernel(metric=_elementwise_expsine_kernel),
-        n_restarts_optimizer=8
-    )
-
-    # Build an optimizer
-    optimizer = BayesianOptimizer(
-        estimator=gpr,
-        X_training=np.concatenate([start_coords[None, :], init_guesses], axis=0),
-        y_training=np.multiply(-1, [0] + init_energies),
-        query_strategy=max_EI,
-    )
+    # Save the initial guesses
+    observed_coords = [start_coords, *init_guesses.tolist()]
+    observed_energies = [0.] + init_energies
 
     # Loop over many steps
     cur_atoms = start_atoms.copy()
     for step in range(n_steps):
         # Make a new search space
-        sample_points = _get_search_space(optimizer, len(dihedrals))
-        logger.debug(f'Generated {len(sample_points)} new points to evaluate')
-
-        # Pick the best point to add to the dataset
-        best_point, best_coords = optimizer.query(sample_points)
-        best_coords = best_coords[0, :]
+        best_coords = select_next_points_modal(observed_coords, observed_energies)
 
         # Compute the energies of those points
         energy, cur_atoms = evaluate_energy(best_coords, cur_atoms, dihedrals, calc, relax)
         logger.info(f'Evaluated energy in step {step+1}/{n_steps}. Energy-E0: {energy-start_energy}')
-        if energy - start_energy < -optimizer.y_max and out_dir is not None:
+        if energy - start_energy < np.min(observed_energies) and out_dir is not None:
             with open(out_dir.joinpath('current_best.xyz'), 'w') as fp:
                 simple_write_xyz(fp, [cur_atoms])
 
@@ -176,18 +201,18 @@ def run_optimization(atoms: Atoms, dihedrals: List[DihedralInfo], n_steps: int, 
         if out_dir is not None:
             add_entry(start_coords, cur_atoms, energy)
 
-        # Update the model
-        with warnings.catch_warnings():
-            warnings.simplefilter('ignore')
-            optimizer.teach([best_coords], [start_energy - energy])  # Remember: We are maximizing -energy
+        # Update the search space
+        observed_coords.append(best_coords)
+        observed_energies.append(energy - start_energy)
 
     # Final relaxations
     best_atoms = cur_atoms.copy()
-    best_energy, best_atoms = evaluate_energy(optimizer.X_max, best_atoms, dihedrals, calc)
+    best_coords = observed_coords[np.argmin(observed_energies)]
+    best_energy, best_atoms = evaluate_energy(best_coords, best_atoms, dihedrals, calc)
     logger.info('Performed final relaxation with dihedral constraints.'
                 f'E: {best_energy}. E-E0: {best_energy - start_energy}')
     if out_dir is not None:
-        add_entry(np.array(optimizer.X_max), best_atoms, best_energy)
+        add_entry(np.array(best_coords), best_atoms, best_energy)
 
     # Relaxations
     best_atoms.set_constraint()
