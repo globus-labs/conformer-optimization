@@ -5,6 +5,7 @@ import hashlib
 import logging
 import sys
 
+import numpy as np
 from ase.io.xyz import simple_write_xyz
 from ase.calculators.psi4 import Psi4
 from xtb.ase.calculator import XTB

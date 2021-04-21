@@ -15,7 +15,7 @@ from modAL.models import BayesianOptimizer
 from ase.calculators.calculator import Calculator
 from ase.io.xyz import simple_write_xyz
 import torch
-from botorch.acquisition import ExpectedImprovement
+from botorch.acquisition import UpperConfidenceBound
 from botorch.models import SingleTaskGP
 from botorch.fit import fit_gpytorch_model
 from botorch.utils import standardize
@@ -158,7 +158,12 @@ def select_next_points_botorch(observed_X: List[List[float]], observed_y: List[f
     fit_gpytorch_model(mll)
 
     # Solve the optimization problem
-    ei = ExpectedImprovement(gp, train_y.max())
+    #  Following boss, we use Eq. 5 of https://arxiv.org/pdf/1012.2599.pdf with delta=0.1
+    n_sampled, n_dim = train_X.shape
+    kappa = np.sqrt(2 * np.log10(
+        np.power(n_sampled, n_dim / 2 + 2) * np.pi ** 2 / (3.0 * 0.1)
+    ))  # Results in more exploration over time
+    ei = UpperConfidenceBound(gp, kappa)
     bounds = torch.zeros(2, train_X.shape[1])
     bounds[1, :] = 360
     candidate, acq_value = optimize_acqf(
