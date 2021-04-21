@@ -81,4 +81,4 @@ if __name__ == "__main__":
     # Save the final structure
     with out_dir.joinpath('final.xyz').open('w') as fp:
         simple_write_xyz(fp, [final_atoms])
-    logger.info('Done.')
+    logger.info(f'Done. Files are stored in {str(out_dir)}')

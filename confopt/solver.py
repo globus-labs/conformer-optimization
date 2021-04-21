@@ -150,10 +150,10 @@ def select_next_points_botorch(observed_X: List[List[float]], observed_y: List[f
     train_y = standardize(-1 * train_y)
 
     # Make the GP
-    gp = SingleTaskGP(train_X, train_y, covar_module=gpykernels.ProductStructureKernel(
+    gp = SingleTaskGP(train_X, train_y, covar_module=gpykernels.ScaleKernel(gpykernels.ProductStructureKernel(
         num_dims=train_X.shape[1],
         base_kernel=gpykernels.PeriodicKernel(period_length_prior=NormalPrior(360, 0.1))
-    ))
+    )))
     mll = ExactMarginalLogLikelihood(gp.likelihood, gp)
     fit_gpytorch_model(mll)
 
@@ -175,7 +175,7 @@ def run_optimization(atoms: Atoms, dihedrals: List[DihedralInfo], n_steps: int, 
         atoms: Atoms object with the initial geometry
         dihedrals: List of dihedral angles to modify
         n_steps: Number of optimization steps to perform
-        init_steps: Number of initial guesses to evalaute
+        init_steps: Number of initial guesses to evaluate
         calc: Calculator to pick the energy
         out_dir: Output path for logging information
         relax: Whether to relax non-dihedral degrees of freedom each step
@@ -196,6 +196,7 @@ def run_optimization(atoms: Atoms, dihedrals: List[DihedralInfo], n_steps: int, 
     # Begin a structure log, if output available
     if out_dir is not None:
         log_path = out_dir.joinpath('structures.csv')
+        ens_path = out_dir.joinpath('ensemble.xyz')
         with log_path.open('w') as fp:
             writer = DictWriter(fp, ['time', 'xyz', 'energy', 'ediff'])
             writer.writeheader()
@@ -212,6 +213,8 @@ def run_optimization(atoms: Atoms, dihedrals: List[DihedralInfo], n_steps: int, 
                     'energy': energy,
                     'ediff': energy - start_energy
                 })
+            with ens_path.open('a') as fp:
+                simple_write_xyz(fp, [atoms], comment=f'\t{energy}')
         add_entry(start_coords, start_atoms, start_energy)
 
     # Make some initial guesses
